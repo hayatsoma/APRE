@@ -21,7 +21,7 @@ import { ChartComponent } from '../../../shared/chart/chart.component';
           </select>
         </div>
         <div class="form__actions">
-        <!== change the text of button to Next==>
+        <!-- change the text of button to Next-->
           <button class="button button--primary" type="submit">Next</button>
         </div>
       </form>
