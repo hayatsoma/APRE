@@ -9,6 +9,7 @@
 const request = require('supertest');
 const app = require('../../../../src/app');
 const { mongo } = require('../../../../src/utils/mongo');
+const { Collection } = require('mongodb');
 
 jest.mock('../../../../src/utils/mongo');
 
@@ -143,3 +144,115 @@ describe('Apre Sales Report API - Sales by Region', () => {
     });
   });
 });
+
+describe('APRE Sales Report API - Sales Data', () =>{
+  it('should fetch a list of sales data', async () =>{
+    mongo.mockImplementation(async (callback) =>{
+      const db = {
+        Collection: jest.fn().mockReturnValue({
+          find: jest.fn().mockReturnValue({
+            toArray: jest.fn().mockResolvedValue([
+              {id: 1, total: 100}
+            ])
+          })
+        })
+      };
+
+      await callback(db);
+    });
+
+    const response = await request(app).get('/api/reports/sales/sales-data');
+
+    // asserts
+    expect(response.status).toBe(200);
+    expect(response.body).toBeDefined();
+    expect(response.body).toEqual([{id: 1, total: 100}]);
+  });
+
+  it('should return an empty array when there are no sales', async () => {
+
+    mongo.mockImplementation(async (callback) =>{
+      const db={
+        collection: jest.fn().mockReturnValue({
+          find: jest.fn().mockReturnValue({
+            toArray: jest.fn().mockResolvedValue([])
+          })
+        })
+     }
+
+      await callback(db)
+    });
+
+    const response = await request(app).get('/api/reports/sales/sales-data');
+
+    // asserts
+    expect(response.status).toBe(200);
+    expect(response.body).toBeDefined();
+    expect(response.body).toEqual([]);
+
+  });
+
+
+});
+describe('APRE Sales Report API - Sales Data by Region and Time Period', () =>{
+
+  //test fetching sales data by region and time period
+  it('should fetch sales data by region and time period', async () => {
+    mongo.mockImplementation(async (callback) => {
+      const db = {
+        collection: jest.fn().mockReturnThis(),
+        find: jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([
+            { region: 'North', date: '2025-01-10', total: 100 },
+          ]),
+        }),
+      };
+      await callback(db);
+    });
+
+    const response = await request(app).get('/api/reports/sales/sales-data/North/2025-01-01/2025-01-31');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([{ region: 'North', date: '2025-01-10', total: 100 }]);
+  });
+
+  it('should return an empty array if region is invalid', async () => {
+    // Mock the MongoDB interaction to simulate the behavior of the database
+    mongo.mockImplementation(async (callback) => {
+      const db = {
+        // Simulate the 'collection' method, returning a mocked collection object
+        collection: jest.fn().mockReturnThis(),
+        find: jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([]),
+        }),
+      };
+      await callback(db);
+    });
+
+    const response = await request(app).get('/api/reports/sales/sales-data/InvalidRegion/2025-01-01/2025-01-31');
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
+  });
+
+
+
+   // Test with no sales data within the specified time period
+   it('should return an empty array if no sales data found within the time period', async () => {
+    mongo.mockImplementation(async (callback) => {
+      const db = {
+        collection: jest.fn().mockReturnThis(),
+        find: jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([]),
+        }),
+      };
+
+      await callback(db);
+    });
+
+    const response = await request(app).get(
+      '/api/reports/sales/sales-data/North/2025-01-01/2025-01-31'
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
+  });
+})

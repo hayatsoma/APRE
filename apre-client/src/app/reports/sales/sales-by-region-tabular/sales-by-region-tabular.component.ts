@@ -15,6 +15,7 @@ import { TableComponent } from './../../../shared/table/table.component';
         <div class="form__group">
           <label class="label" for="region">Region</label>
           <select class="select" formControlName="region" id="region" name="region">
+            <option value="" disabled>Select region</option>
             @for(region of regions; track region) {
               <option value="{{ region }}">{{ region }}</option>
             }
